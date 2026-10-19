@@ -10,4 +10,5 @@ export const config = {
   s3Bucket: process.env.S3_BUCKET || 'goonj-media-dev',
   uploadUrlTtl: Number(process.env.UPLOAD_URL_TTL || 900),
   dubbingUrl: process.env.DUBBING_URL || '',
+  paymentsUrl: process.env.PAYMENTS_URL || '',
 };
