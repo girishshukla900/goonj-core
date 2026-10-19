@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const suites = [
+  ['db',        'db/test/db.test.js'],
   ['backend',   'backend/test/smoke.js'],
   ['dubbing',   'dubbing/test/pipeline.test.js'],
   ['payments',  'payments/test/payments.test.js'],
