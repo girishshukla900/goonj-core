@@ -9,7 +9,7 @@ router.post('/', requireAuth, (req, res) => {
   const { title, source_lang } = req.body || {};
   if (!title) return res.status(400).json({ error: 'title_required' });
   const id = 'vid_' + Math.random().toString(36).slice(2, 10);
-  const uploadUrl = `https://media.goonj.dev/upload/${id}
+  const uploadUrl = `https://media.goonj.dev/upload/${id}`;
   res.status(201).json({
     id, title, source_lang: source_lang || 'hi',
     status: 'upload_pending', upload_url: uploadUrl,

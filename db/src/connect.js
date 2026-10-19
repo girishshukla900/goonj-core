@@ -5,6 +5,17 @@
 import { PGlite } from '@electric-sql/pglite';
 import pg from 'pg';
 
+// Money is stored as BIGINT (int8, OID 20) paise. PGlite parses int8 to a
+// Number when it fits safely (BigInt otherwise); node-postgres returns it as a
+// *string*. That made the same value a number on one backend and a string on
+// the other, so comparisons like `amount_paise === 45000` passed on PGlite and
+// failed on a real Postgres. Parse int8 here exactly as PGlite does, so both
+// backends agree.
+pg.types.setTypeParser(20, (v) => {
+  const n = BigInt(v);
+  return n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER ? n : Number(n);
+});
+
 let handle = null;
 
 export async function getDb() {
