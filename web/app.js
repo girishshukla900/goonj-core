@@ -10,6 +10,7 @@ const LANGS = [
 ];
 const TABS = [['home', 'For You'], ['live', 'Live'], ['studio', 'Studio'], ['clubs', 'Clubs']];
 
+const CH = 'meera';   // the signed-in creator's channel
 const state = { token: localStorage.getItem('goonj_token') || null, screen: 'home', lang: 'hi', video: null };
 
 const $ = (s) => document.querySelector(s);
@@ -85,12 +86,21 @@ async function screenStudio() {
       <div class="kpi"><div class="k">Ledger entries</div><div class="v">${((body && body.ledger) || []).length}</div>
         <div class="meta">double-entry</div></div>
     </div>
-    <div class="row"><button class="btn em" id="payout">Withdraw to UPI</button></div>
-    <div class="note" id="payoutNote">UPI payouts are daily and automatic.</div>`;
+    <div class="row"><button class="btn em" id="payout">Withdraw to UPI</button>
+      <button class="btn" id="exportBtn">Export my data</button></div>
+    <div class="note" id="payoutNote">UPI payouts are daily and automatic.</div>
+    <div class="note" id="exportNote">Your content is yours — take it any time.</div>`;
   $('#payout').addEventListener('click', async () => {
-    const r = await api('/v1/earnings/payouts', { method: 'POST', body: { channel_id: 'ch_meera', upi_id: 'meera@okaxis' } });
+    const r = await api('/v1/earnings/payouts', { method: 'POST', body: { channel_id: CH, upi_id: 'meera@okaxis' } });
     if (r.status === 202) { toast('Payout sent · ' + r.body.utr); $('#payoutNote').textContent = 'Paid ₹' + ((r.body.amount_paise || 0) / 100).toFixed(2) + ' · ' + r.body.utr; $('#balance').textContent = '₹' + ((r.body.balance_paise || 0) / 100).toFixed(2); }
     else toast('Payout failed: ' + ((r.body && r.body.error) || r.status));
+  });
+  $('#exportBtn').addEventListener('click', async () => {
+    const r = await api('/v1/export/summary?channel_id=' + CH);
+    if (r.status === 200) {
+      $('#exportNote').textContent = `Exported ${r.body.videos} videos · ${r.body.ledger_entries} ledger entries · ₹${(r.body.balance_paise / 100).toFixed(2)} balance`;
+      toast('Export ready');
+    } else toast('Export failed');
   });
 }
 
@@ -110,7 +120,7 @@ async function screenLive() {
   let chatCount = 0;
   $('#goLive').addEventListener('click', async () => {
     if (!state.token) return toast('Sign in first');
-    const r = await api('/v1/live/streams', { method: 'POST', body: { channel_id: 'ch_meera', title: 'Rajma Chawal Live', source_lang: 'hi' } });
+    const r = await api('/v1/live/streams', { method: 'POST', body: { channel_id: CH, title: 'Rajma Chawal Live', source_lang: 'hi' } });
     if (r.status === 201) {
       streamId = r.body.id;
       $('#liveNote').textContent = 'Live on: ' + r.body.destinations.map((d) => d.label).join(', ');
@@ -165,7 +175,7 @@ async function screenClubs() {
   };
   $('#main').querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', async () => {
     if (!state.token) return toast('Sign in first');
-    const r = await api('/v1/community/memberships', { method: 'POST', body: { user_id: 'u_web', channel_id: 'ch_meera', tier: b.dataset.tier } });
+    const r = await api('/v1/community/memberships', { method: 'POST', body: { user_id: 'u_web', channel_id: CH, tier: b.dataset.tier } });
     if (r.status === 201) { $('#clubNote').textContent = `Joined ${r.body.tier} · badge: ${r.body.badge}`; toast('Joined ' + r.body.tier); loadBoard(); }
     else toast('Could not join');
   }));
@@ -189,7 +199,7 @@ function openWatch(d) {
     b.addEventListener('click', () => toast(b.dataset.act === 'tip' ? 'Tip sent ₹50 via UPI' : 'Done')));
   $('#dubChips').querySelectorAll('.chip').forEach((c) => c.addEventListener('click', async () => {
     if (!state.token) return toast('Sign in first');
-    const r = await api(`/v1/videos/${d.id}/dubs`, { method: 'POST', body: { channel_id: 'ch_meera', source_lang: d.lang, target_langs: [c.dataset.code] } });
+    const r = await api(`/v1/videos/${d.id}/dubs`, { method: 'POST', body: { channel_id: CH, source_lang: d.lang, target_langs: [c.dataset.code] } });
     $('#dubChips').querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x === c));
     $('#dubNote').textContent = (r.status === 202)
       ? `Queued: ${c.textContent} — dubbing in the creator's own voice.`
