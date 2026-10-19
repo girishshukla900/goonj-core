@@ -34,6 +34,14 @@ Real ASR/TTS/voice-clone, a payments partner, and RTMP destinations are
 selected by env and implemented as adapters. Voice cloning fails closed
 without consent.
 
+## Auth (`db/src/auth_repo.js`)
+Phone OTP, hardened: codes are stored **hashed** (never in the clear), expire in
+5 minutes, are **single-use**, **lock out** after 5 wrong attempts, and are
+**rate-limited** to 3 requests per phone per 10 minutes. In production the code
+is never returned in the response (it is sent by SMS); in development it is
+returned as `dev_otp` so the flow is testable. A successful verify creates the
+user and issues a JWT.
+
 ## Money model (`payments/` on `db/src/ledger.js`)
 - Creator keeps 90%; platform keeps 10%. Amounts are integer **paise**.
 - The ledger is **double-entry in PostgreSQL**: every transaction sums to zero,
@@ -48,7 +56,7 @@ Peaks are detected from live-chat activity (10s buckets), then cut into
 non-overlapping 30s clips with titles, hooks and captions.
 
 ## Status by phase
-- **Phase 0** — implemented; the feed reads from PostgreSQL; media storage/transcode stubbed.
+- **Phase 0** — implemented; feed reads from PostgreSQL; login is a hardened OTP flow; media storage/transcode stubbed.
 - **Phase 1** — dubbing pipeline implemented with local providers; state in PostgreSQL.
 - **Phase 2** — double-entry ledger in PostgreSQL, split and daily UPI payouts; UPI transfer simulated.
 - **Phase 3** — simulcast, chat, polls and clip factory implemented in PostgreSQL; RTMP fan-out modelled.
