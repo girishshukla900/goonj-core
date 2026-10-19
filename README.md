@@ -61,6 +61,7 @@ npm test          # runs all six suites (root)
 |---|---|
 | db | schema, regional-first feed query, ledger, payouts (real Postgres) |
 | auth | hashed, expiring, single-use, attempt- and rate-limited OTP |
+| export | a creator's whole body of work comes back in one bundle |
 | backend | auth, upload, dub route, feed served from the database |
 | dubbing | full pipeline writes real WAV + VTT tracks |
 | payments | 90/10 split, balanced double-entry ledger, payouts |
@@ -85,6 +86,7 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 | `POST /v1/live/streams/{id}/chat` | Live chat (moderated) | user |
 | `POST /v1/live/streams/{id}/clips` | Generate shorts | creator |
 | `POST /v1/community/memberships` | Join a fan club | user |
+| `GET /v1/export?channel_id=` | Export everything a creator owns | creator |
 
 ## Status
 - **Phase 0** (API skeleton): implemented; the feed reads from PostgreSQL; login is a hardened OTP flow (hashed codes, 5-minute expiry, attempt lockout, per-phone rate limiting). Media storage/transcode still stubbed.
@@ -92,5 +94,6 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 - **Phase 2** (money): double-entry ledger in PostgreSQL, 90/10 split, daily UPI payouts; UPI transfer simulated.
 - **Phase 3** (live): simulcast, moderated chat, polls and the AI Clip Factory, stored in PostgreSQL; RTMP fan-out modelled.
 - **Phase 4** (community): memberships, superfan badges, watch parties in PostgreSQL; revenue posted to the ledger.
+- **Ownership**: a creator can export everything they own (videos, tracks, ledger, payouts, members, streams) as one JSON bundle — the "no lock-in" promise, implemented.
 
 **Not real yet (needs credentials/infra):** SMS delivery for the OTP, ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real across every service. All sit behind adapters.
