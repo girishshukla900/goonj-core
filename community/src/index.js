@@ -1,6 +1,6 @@
-// Goonj community service — HTTP API (zero dependencies, node:http).
+// Goonj community service — HTTP API. Memberships etc. live in Postgres.
 import http from 'node:http';
-import { store } from './store.js';
+import * as repo from '../../db/src/community_repo.js';
 import { tiersFor, setTiers } from './tiers.js';
 import { join, cancel, membersFor, leaderboard } from './memberships.js';
 import { createParty, rsvp, createPost, postsFor } from './parties.js';
@@ -28,10 +28,10 @@ export function createServer() {
       if (req.method === 'GET' && p === '/health') return json(res, 200, { ok: true, service: 'goonj-community' });
 
       const mTiers = p.match(/^\/channels\/([^/]+)\/tiers$/);
-      if (mTiers && req.method === 'GET') return json(res, 200, { channel_id: mTiers[1], tiers: tiersFor(mTiers[1]) });
+      if (mTiers && req.method === 'GET') return json(res, 200, { channel_id: mTiers[1], tiers: await tiersFor(mTiers[1]) });
       if (mTiers && req.method === 'POST') {
         const b = await readJson(req);
-        return json(res, 200, { channel_id: mTiers[1], tiers: setTiers(mTiers[1], b.tiers || []) });
+        return json(res, 200, { channel_id: mTiers[1], tiers: await setTiers(mTiers[1], b.tiers || []) });
       }
 
       if (req.method === 'POST' && p === '/memberships') {
@@ -41,50 +41,44 @@ export function createServer() {
       }
       if (req.method === 'POST' && p === '/memberships/cancel') {
         const b = await readJson(req);
-        return json(res, 200, cancel(b));
+        return json(res, 200, await cancel(b));
       }
 
       const mUserMemberships = p.match(/^\/users\/([^/]+)\/memberships$/);
       if (req.method === 'GET' && mUserMemberships) {
-        const uid = mUserMemberships[1];
-        const list = [...store.memberships.values()].filter((m) => m.user_id === uid);
-        return json(res, 200, { user_id: uid, memberships: list });
+        return json(res, 200, { user_id: mUserMemberships[1], memberships: await repo.listMembershipsForUser(mUserMemberships[1]) });
       }
 
       const mMembers = p.match(/^\/channels\/([^/]+)\/members$/);
-      if (req.method === 'GET' && mMembers) return json(res, 200, { channel_id: mMembers[1], members: membersFor(mMembers[1]) });
+      if (req.method === 'GET' && mMembers) return json(res, 200, { channel_id: mMembers[1], members: await membersFor(mMembers[1]) });
 
       const mLeader = p.match(/^\/channels\/([^/]+)\/leaderboard$/);
-      if (req.method === 'GET' && mLeader) return json(res, 200, { channel_id: mLeader[1], leaderboard: leaderboard(mLeader[1]) });
+      if (req.method === 'GET' && mLeader) return json(res, 200, { channel_id: mLeader[1], leaderboard: await leaderboard(mLeader[1]) });
 
       const mPosts = p.match(/^\/channels\/([^/]+)\/posts$/);
       if (mPosts && req.method === 'GET') {
-        return json(res, 200, { channel_id: mPosts[1], posts: postsFor(mPosts[1], { viewer_id: url.searchParams.get('viewer_id') }) });
+        return json(res, 200, { channel_id: mPosts[1], posts: await postsFor(mPosts[1], { viewer_id: url.searchParams.get('viewer_id') }) });
       }
       if (req.method === 'POST' && p === '/posts') {
         const b = await readJson(req);
         if (!b.channel_id) return json(res, 400, { error: 'channel_id required' });
-        return json(res, 201, createPost(b));
+        return json(res, 201, await createPost(b));
       }
 
       if (req.method === 'POST' && p === '/parties') {
         const b = await readJson(req);
         if (!b.channel_id) return json(res, 400, { error: 'channel_id required' });
-        const party = createParty(b);
-        store.parties.set(party.id, party);
-        return json(res, 201, party);
+        return json(res, 201, await createParty(b));
       }
       const mParty = p.match(/^\/parties\/([^/]+)$/);
       if (req.method === 'GET' && mParty) {
-        const party = store.parties.get(mParty[1]);
+        const party = await repo.getParty(mParty[1]);
         return party ? json(res, 200, party) : json(res, 404, { error: 'party_not_found' });
       }
       const mRsvp = p.match(/^\/parties\/([^/]+)\/rsvp$/);
       if (req.method === 'POST' && mRsvp) {
-        const party = store.parties.get(mRsvp[1]);
-        if (!party) return json(res, 404, { error: 'party_not_found' });
         const b = await readJson(req);
-        return json(res, 200, rsvp(party, b.user_id));
+        return json(res, 200, await rsvp(mRsvp[1], b.user_id));
       }
 
       return json(res, 404, { error: 'not_found' });
