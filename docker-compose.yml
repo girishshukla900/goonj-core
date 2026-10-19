@@ -1,5 +1,5 @@
-# Local development stack: Postgres + Redis.
-# Usage: docker compose up -d
+# Full local stack: Postgres + Redis + the five Goonj services.
+# Usage: docker compose up --build
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,8 +7,7 @@ services:
       POSTGRES_USER: goonj
       POSTGRES_PASSWORD: goonj
       POSTGRES_DB: goonj
-    ports:
-      - "5432:5432"
+    ports: ["5432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d:ro
@@ -19,8 +18,45 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    ports: ["6379:6379"]
+
+  dubbing:
+    build: ./dubbing
+    environment:
+      DUBBING_PORT: "4100"
+    ports: ["4100:4100"]
+
+  payments:
+    build: ./payments
+    environment:
+      PAYMENTS_PORT: "4200"
+    ports: ["4200:4200"]
+
+  live:
+    build: ./live
+    environment:
+      LIVE_PORT: "4300"
+    ports: ["4300:4300"]
+
+  community:
+    build: ./community
+    environment:
+      COMMUNITY_PORT: "4400"
+      PAYMENTS_URL: "http://payments:4200"
+    ports: ["4400:4400"]
+    depends_on: [payments]
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: "postgres://goonj:goonj@postgres:5432/goonj"
+      REDIS_URL: "redis://redis:6379"
+      DUBBING_URL: "http://dubbing:4100"
+      PAYMENTS_URL: "http://payments:4200"
+      LIVE_URL: "http://live:4300"
+      COMMUNITY_URL: "http://community:4400"
+    ports: ["4000:4000"]
+    depends_on: [postgres, redis, dubbing, payments, live, community]
 
 volumes:
   pgdata:
