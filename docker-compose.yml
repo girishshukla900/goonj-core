@@ -27,10 +27,14 @@ services:
     ports: ["4100:4100"]
 
   payments:
-    build: ./payments
+    build:
+      context: .
+      dockerfile: payments/Dockerfile
     environment:
       PAYMENTS_PORT: "4200"
+      DATABASE_URL: "postgres://goonj:goonj@postgres:5432/goonj"
     ports: ["4200:4200"]
+    depends_on: [postgres]
 
   live:
     build: ./live
