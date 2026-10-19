@@ -12,4 +12,5 @@ export const config = {
   dubbingUrl: process.env.DUBBING_URL || '',
   paymentsUrl: process.env.PAYMENTS_URL || '',
   liveUrl: process.env.LIVE_URL || '',
+  communityUrl: process.env.COMMUNITY_URL || '',
 };
