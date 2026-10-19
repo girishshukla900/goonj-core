@@ -1,28 +1,32 @@
 import { Router } from 'express';
 import { sign } from '../middleware/auth.js';
+import { requestOtp, verifyOtp } from '../../../db/src/auth_repo.js';
+import { createUser } from '../../../db/src/repo.js';
 
 const router = Router();
 
-// Phase 0: in-memory OTP store. Replace with Redis + an SMS provider before launch.
-const otps = new Map();
+const isProd = () => (process.env.NODE_ENV || 'development') === 'production';
 
-router.post('/otp', (req, res) => {
-  const { phone } = req.body || {};
-  if (!phone) return res.status(400).json({ error: 'phone_required' });
-  const code = '0000'; // dev OTP only
-  otps.set(phone, { code, exp: Date.now() + 5 * 60 * 1000 });
-  res.json({ ok: true, phone, dev_otp: code });
+// Request an OTP. In production the code is never returned in the response.
+router.post('/otp', async (req, res, next) => {
+  try {
+    const { phone } = req.body || {};
+    const result = await requestOtp({ phone, exposeCode: !isProd() });
+    res.json({ ok: true, phone: result.phone, ...(result.code ? { dev_otp: result.code } : {}) });
+  } catch (err) { next(err); }
 });
 
-router.post('/verify', (req, res) => {
-  const { phone, code } = req.body || {};
-  const record = otps.get(phone);
-  if (!record || record.code !== code || record.exp < Date.now()) {
-    return res.status(401).json({ error: 'invalid_otp' });
-  }
-  otps.delete(phone);
-  const token = sign({ sub: phone, role: 'creator' });
-  res.json({ ok: true, token });
+// Verify the OTP and issue a session token.
+router.post('/verify', async (req, res, next) => {
+  try {
+    const { phone, code } = req.body || {};
+    if (!phone || !code) return res.status(400).json({ error: 'phone_and_code_required' });
+    const verdict = await verifyOtp({ phone, code });
+    if (!verdict.ok) return res.status(401).json({ error: verdict.error });
+    const user = await createUser({ phone, role: 'creator' });
+    const token = sign({ sub: phone, uid: user.id, role: user.role });
+    res.json({ ok: true, token, user: { id: user.id, phone: user.phone, role: user.role } });
+  } catch (err) { next(err); }
 });
 
 export default router;
