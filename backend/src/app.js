@@ -7,6 +7,7 @@ import earningsRoutes from './routes/earnings.js';
 import liveRoutes from './routes/live.js';
 import communityRoutes from './routes/community.js';
 import exportRoutes from './routes/export.js';
+import mediaRoutes from './routes/media.js';
 
 export function createApp() {
   const app = express();
@@ -23,6 +24,7 @@ export function createApp() {
   app.use('/v1/live', liveRoutes);
   app.use('/v1/community', communityRoutes);
   app.use('/v1/export', exportRoutes);
+  app.use('/media', mediaRoutes);
 
   app.use((err, req, res, next) => {
     const status = err.status || 500;

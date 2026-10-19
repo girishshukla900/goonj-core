@@ -64,7 +64,7 @@ Peaks are detected from live-chat activity (10s buckets), then cut into
 non-overlapping 30s clips with titles, hooks and captions.
 
 ## Status by phase
-- **Phase 0** — implemented; feed reads from PostgreSQL; login is a hardened OTP flow; media storage/transcode stubbed.
+- **Phase 0** — implemented; feed reads from PostgreSQL; login is a hardened OTP flow; uploads go through a storage adapter (`backend/src/media/storage.js`, local disk by default) and play back over signed, Range-capable URLs (`backend/src/routes/media.js`); transcoding stubbed.
 - **Phase 1** — dubbing pipeline implemented with local providers; state in PostgreSQL.
 - **Phase 2** — double-entry ledger in PostgreSQL, split and daily UPI payouts; UPI transfer simulated.
 - **Phase 3** — simulcast, chat, polls and clip factory implemented in PostgreSQL; RTMP fan-out modelled.

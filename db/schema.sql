@@ -43,6 +43,12 @@ CREATE TABLE IF NOT EXISTS video_assets (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Storage metadata for a stored asset. Added after the first release, so use
+-- ADD COLUMN IF NOT EXISTS to keep the schema idempotent on existing databases.
+ALTER TABLE video_assets ADD COLUMN IF NOT EXISTS storage_key  TEXT;
+ALTER TABLE video_assets ADD COLUMN IF NOT EXISTS content_type TEXT;
+ALTER TABLE video_assets ADD COLUMN IF NOT EXISTS bytes        BIGINT;
+
 -- ---- Double-entry ledger (the money layer) ----
 -- Convention: signed amounts, positive = credit, negative = debit.
 -- Every transaction's entries must sum to zero, so the journal always balances.

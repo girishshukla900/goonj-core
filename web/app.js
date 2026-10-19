@@ -89,7 +89,14 @@ async function screenStudio() {
     <div class="row"><button class="btn em" id="payout">Withdraw to UPI</button>
       <button class="btn" id="exportBtn">Export my data</button></div>
     <div class="note" id="payoutNote">UPI payouts are daily and automatic.</div>
-    <div class="note" id="exportNote">Your content is yours — take it any time.</div>`;
+    <div class="note" id="exportNote">Your content is yours — take it any time.</div>
+    <h2 style="font-size:16px;margin-top:20px">Upload a video</h2>
+    <div class="row">
+      <input id="uploadTitle" placeholder="Title" style="flex:1;padding:9px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface)">
+      <input id="uploadFile" type="file" accept="video/*" style="max-width:220px">
+      <button class="btn acc" id="uploadBtn">Upload</button>
+    </div>
+    <div class="note" id="uploadNote">Your video is stored on the media service and playable right away.</div>`;
   $('#payout').addEventListener('click', async () => {
     const r = await api('/v1/earnings/payouts', { method: 'POST', body: { channel_id: CH, upi_id: 'meera@okaxis' } });
     if (r.status === 202) { toast('Payout sent · ' + r.body.utr); $('#payoutNote').textContent = 'Paid ₹' + ((r.body.amount_paise || 0) / 100).toFixed(2) + ' · ' + r.body.utr; $('#balance').textContent = '₹' + ((r.body.balance_paise || 0) / 100).toFixed(2); }
@@ -101,6 +108,27 @@ async function screenStudio() {
       $('#exportNote').textContent = `Exported ${r.body.videos} videos · ${r.body.ledger_entries} ledger entries · ₹${(r.body.balance_paise / 100).toFixed(2)} balance`;
       toast('Export ready');
     } else toast('Export failed');
+  });
+  $('#uploadBtn').addEventListener('click', async () => {
+    const file = $('#uploadFile').files[0];
+    if (!file) return toast('Pick a video file first');
+    const title = ($('#uploadTitle').value || '').trim() || file.name;
+    $('#uploadNote').textContent = 'Uploading…';
+    const created = await api('/v1/videos', { method: 'POST', body: { title, source_lang: 'hi' } });
+    if (created.status !== 201) return void ($('#uploadNote').textContent = 'Could not start the upload.');
+    const res = await fetch(API + created.body.upload_url, {
+      method: 'POST',
+      headers: { 'content-type': file.type || 'application/octet-stream', authorization: 'Bearer ' + state.token },
+      body: file,
+    });
+    const out = await res.json().catch(() => null);
+    if (res.status === 201 && out) {
+      $('#uploadNote').textContent = `Uploaded ${out.bytes} bytes · ${out.content_type}`;
+      toast('Upload complete');
+    } else {
+      $('#uploadNote').textContent = 'Upload failed.';
+      toast('Upload failed');
+    }
   });
 }
 
@@ -185,7 +213,13 @@ async function screenClubs() {
 /* ---------- watch overlay ---------- */
 function openWatch(d) {
   state.video = d;
-  $('#player').textContent = (d.channel || '?')[0];
+  $('#player').innerHTML = `<span>${esc((d.channel || '?')[0])}</span>`;
+  // If this video has been uploaded, play the real media from the API.
+  api(`/v1/videos/${d.id}`).then(({ body }) => {
+    const track = body && body.tracks && body.tracks[0];
+    if (!track) return;
+    $('#player').innerHTML = `<video controls playsinline preload="metadata" src="${API}${track.url}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;background:#000"></video>`;
+  }).catch(() => {});
   $('#wTitle').textContent = d.title;
   $('#wMeta').textContent = `${d.channel} · ${d.lang}`;
   $('#wActions').innerHTML = `
