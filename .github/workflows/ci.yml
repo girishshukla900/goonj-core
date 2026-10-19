@@ -16,5 +16,6 @@ jobs:
         run: |
           npm --prefix db install --no-audit --no-fund
           npm --prefix backend install --no-audit --no-fund
+          npm --prefix web install --no-audit --no-fund
       - name: Run all test suites
         run: npm test
