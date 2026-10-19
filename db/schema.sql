@@ -188,3 +188,41 @@ CREATE TABLE IF NOT EXISTS community_posts (
   members_only BOOLEAN NOT NULL DEFAULT false,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ---- Dubbing (Phase 1) ----
+CREATE TABLE IF NOT EXISTS voice_models (
+  id         TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL,
+  consent_at TIMESTAMPTZ NOT NULL,
+  status     TEXT NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS dubbing_jobs (
+  id             TEXT PRIMARY KEY,
+  video_id       TEXT NOT NULL,
+  channel_id     TEXT,
+  source_lang    TEXT NOT NULL,
+  target_lang    TEXT NOT NULL,
+  voice_model_id TEXT,
+  status         TEXT NOT NULL DEFAULT 'queued',
+  step           TEXT,
+  progress       INTEGER NOT NULL DEFAULT 0,
+  error          TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS dubbing_jobs_video_idx ON dubbing_jobs (video_id);
+
+CREATE TABLE IF NOT EXISTS dubbing_tracks (
+  id             TEXT PRIMARY KEY,
+  video_id       TEXT NOT NULL,
+  lang           TEXT NOT NULL,
+  kind           TEXT NOT NULL DEFAULT 'dub_audio',
+  audio          TEXT NOT NULL,
+  subtitle       TEXT,
+  voice_model_id TEXT,
+  duration_s     NUMERIC,
+  bytes          BIGINT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (video_id, lang)
+);
