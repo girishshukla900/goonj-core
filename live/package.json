@@ -1,0 +1,11 @@
+{
+  "name": "goonj-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Goonj live service — Phase 3 (simulcast, live chat, AI Clip Factory)",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/live.test.js"
+  }
+}
