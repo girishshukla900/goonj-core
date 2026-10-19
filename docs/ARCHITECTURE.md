@@ -12,28 +12,31 @@
 client -> API gateway -> catalog -> signed CDN URL -> CDN -> player.
 The player never talks to the origin.
 
-## AI dubbing pipeline (`dubbing/`)
-```
-ASR -> translate -> voice clone -> TTS -> align -> mix -> publish
-```
-Providers sit behind a fixed interface; defaults are local and credential-free
-(they write real WAV audio and VTT subtitles). Real ASR/TTS/voice-clone
-services are selected by env and implemented as adapters. Voice cloning fails
-closed without consent.
+## Services
+| Service | Phase | Responsibility |
+|---|---|---|
+| `backend` | 0 | Auth, upload, feed, earnings, live proxy |
+| `dubbing` | 1 | ASR -> translate -> voice clone -> TTS -> align -> mix -> publish |
+| `payments` | 2 | Double-entry ledger, 90/10 split, daily UPI payouts |
+| `live` | 3 | Simulcast, moderated chat, polls, AI Clip Factory |
+
+Providers sit behind fixed interfaces; defaults are local and credential-free.
+Real ASR/TTS/voice-clone, a payments partner, and RTMP destinations are
+selected by env and implemented as adapters. Voice cloning fails closed
+without consent.
 
 ## Money model (`payments/`)
 - Creator keeps 90%; platform keeps 10%. Amounts are integer **paise**.
-- The ledger is **double-entry**: every transaction sums to zero, so the
-  journal always balances (asserted in tests).
-- Payouts are daily and automatic to the creator's verified UPI ID.
-- Accounts: `external_income`, `creator_payable:{channel}`, `platform_revenue`,
-  `payouts_cleared`.
-- The UPI transfer is simulated; wire a payments partner in `payouts.js`.
+- The ledger is double-entry: every transaction sums to zero (asserted in tests).
+- Accounts: `external_income`, `creator_payable:{channel}`, `platform_revenue`, `payouts_cleared`.
+
+## Clip Factory (`live/`)
+Peaks are detected from live-chat activity (10s buckets), then cut into
+non-overlapping 30s clips with titles, hooks and captions.
 
 ## Status by phase
-- **Phase 0** — accounts, upload, transcode, playback, feed, watch, search.
-  Implemented: API skeleton, schema, auth, upload/dub/feed/earnings routes.
-  Stubbed: feed DB query, media storage/transcode.
+- **Phase 0** — implemented; feed DB query and media storage/transcode stubbed.
 - **Phase 1** — dubbing pipeline implemented with local providers.
 - **Phase 2** — ledger, split and daily UPI payouts implemented; UPI transfer simulated.
-- **Phase 3+** — live, clip factory, fan clubs: designed, not yet built.
+- **Phase 3** — simulcast, chat, polls, clip factory implemented; RTMP fan-out modelled.
+- **Phase 4** — fan clubs, memberships, watch parties: designed, not yet built.
