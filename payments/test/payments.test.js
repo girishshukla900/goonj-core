@@ -6,7 +6,7 @@ function request(port, method, urlPath, body) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const req = http.request(
-      { host: '127.0.0.1', port, method, path: urlPath,
+      { host: '127.0.0.1', port, method, path: urlPath, agent: false,
         headers: { 'content-type': 'application/json', ...(data ? { 'content-length': Buffer.byteLength(data) } : {}) } },
       (res) => {
         let out = '';
