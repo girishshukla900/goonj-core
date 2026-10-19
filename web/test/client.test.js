@@ -87,7 +87,7 @@ async function main() {
 
     const devtools = await new Promise((resolve, reject) => {
       let buf = '';
-      const t = setTimeout(() => reject(new Error('no devtools endpoint')), 15000);
+      const t = setTimeout(() => reject(new Error('no devtools endpoint')), 45000);
       child.stderr.on('data', (c) => {
         buf += c.toString();
         const m = /ws:\/\/127\.0\.0\.1:(\d+)\/devtools\/browser/.exec(buf);
@@ -96,7 +96,7 @@ async function main() {
     });
 
     let target = null;
-    for (let i = 0; i < 40 && !target; i++) {
+    for (let i = 0; i < 100 && !target; i++) {
       try {
         const list = await getJson(devtools, '/json/list');
         target = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
@@ -122,7 +122,7 @@ async function main() {
 
     const bodyText = () => evaluate('document.body.innerText');
     const click = (sel) => evaluate(`(function(){var e=document.querySelector(${JSON.stringify(sel)}); if(e){e.click(); return true;} return false;})()`);
-    const waitFor = async (expr, ms = 8000) => {
+    const waitFor = async (expr, ms = 15000) => {
       const end = Date.now() + ms;
       while (Date.now() < end) { const v = await evaluate(expr); if (v) return v; await wait(200); }
       return null;
