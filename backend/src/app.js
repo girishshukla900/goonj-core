@@ -23,8 +23,9 @@ export function createApp() {
   app.use('/v1/community', communityRoutes);
 
   app.use((err, req, res, next) => {
-    console.error(err);
-    res.status(err.status || 500).json({ error: err.message || 'internal_error' });
+    const status = err.status || 500;
+    if (status >= 500) console.error(err);   // expected 4xx are not errors to log
+    res.status(status).json({ error: err.message || 'internal_error' });
   });
 
   return app;
