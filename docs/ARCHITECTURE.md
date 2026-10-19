@@ -33,10 +33,13 @@ Real ASR/TTS/voice-clone, a payments partner, and RTMP destinations are
 selected by env and implemented as adapters. Voice cloning fails closed
 without consent.
 
-## Money model (`payments/`)
+## Money model (`payments/` on `db/src/ledger.js`)
 - Creator keeps 90%; platform keeps 10%. Amounts are integer **paise**.
-- The ledger is double-entry: every transaction sums to zero (asserted in tests).
+- The ledger is **double-entry in PostgreSQL**: every transaction sums to zero,
+  so the journal always balances (asserted in tests). A creator's balance is
+  simply the sum of their `creator_payable:{channel}` account.
 - Accounts: `external_income`, `creator_payable:{channel}`, `platform_revenue`, `payouts_cleared`.
+- Tables: `ledger_accounts`, `ledger_entries`, `payouts`, `channel_upi`.
 - Membership revenue from `community/` flows into the same ledger.
 
 ## Clip Factory (`live/`)
@@ -46,7 +49,7 @@ non-overlapping 30s clips with titles, hooks and captions.
 ## Status by phase
 - **Phase 0** — implemented; the feed reads from PostgreSQL; media storage/transcode stubbed.
 - **Phase 1** — dubbing pipeline implemented with local providers.
-- **Phase 2** — ledger, split and daily UPI payouts implemented; UPI transfer simulated.
+- **Phase 2** — double-entry ledger in PostgreSQL, split and daily UPI payouts; UPI transfer simulated.
 - **Phase 3** — simulcast, chat, polls, clip factory implemented; RTMP fan-out modelled.
 - **Phase 4** — memberships, badges, watch parties implemented; revenue posted to the ledger.
 
