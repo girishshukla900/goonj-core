@@ -3,7 +3,9 @@
 Runs the AI dubbing pipeline that is Goonj's wedge: one video, many Indian
 languages, in the creator's own voice.
 
-Zero dependencies (Node `node:http` + `node:fs` only). Runs anywhere Node runs.
+Zero dependencies (Node `node:http` + `node:fs` only). Job, voice-model and
+track state live in **PostgreSQL** (`db/src/dubbing_repo.js`); the audio and
+caption files are written to disk.
 
 ## Pipeline
 ```
