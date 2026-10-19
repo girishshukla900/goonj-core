@@ -9,6 +9,7 @@ const suites = [
   ['db',        'db/test/db.test.js'],
   ['auth',      'backend/test/auth.test.js'],
   ['backend',   'backend/test/smoke.js'],
+  ['media',     'backend/test/media.test.js'],
   ['export',    'backend/test/export.test.js'],
   ['dubbing',   'dubbing/test/pipeline.test.js'],
   ['payments',  'payments/test/payments.test.js'],

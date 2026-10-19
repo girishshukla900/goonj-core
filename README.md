@@ -63,6 +63,7 @@ npm test          # runs all six suites (root)
 | auth | hashed, expiring, single-use, attempt- and rate-limited OTP |
 | export | a creator's whole body of work comes back in one bundle |
 | backend | auth, upload, dub route, feed served from the database |
+| media | upload to storage, signed playback URLs, HTTP Range, token expiry |
 | dubbing | full pipeline writes real WAV + VTT tracks |
 | payments | 90/10 split, balanced double-entry ledger, payouts |
 | live | simulcast, moderated chat, polls, AI Clip Factory |
@@ -77,7 +78,10 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 |---|---|---|
 | `GET /health` | Liveness | none |
 | `POST /v1/auth/otp` , `/verify` | Phone login | none |
-| `POST /v1/videos` | Create upload, get signed URL | creator |
+| `POST /v1/videos` | Reserve an upload, get the upload URL | creator |
+| `POST /v1/videos/{id}/media` | Upload the media bytes (stored, then published) | creator |
+| `GET /media/{assetId}?exp=&sig=` | Stream an asset (Range-capable, signed) | signed URL |
+| `GET /v1/videos/{id}` | Video details + signed playback URLs | none |
 | `POST /v1/videos/{id}/dubs` | Request language dubs | creator |
 | `GET /v1/feed?lang=&region=` | Regional-first feed | user |
 | `GET /v1/earnings?channel_id=` | Balance + ledger | creator |
@@ -89,11 +93,11 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 | `GET /v1/export?channel_id=` | Export everything a creator owns | creator |
 
 ## Status
-- **Phase 0** (API skeleton): implemented; the feed reads from PostgreSQL; login is a hardened OTP flow (hashed codes, 5-minute expiry, attempt lockout, per-phone rate limiting). Media storage/transcode still stubbed.
+- **Phase 0** (API skeleton): implemented; the feed reads from PostgreSQL; login is a hardened OTP flow (hashed codes, 5-minute expiry, attempt lockout, per-phone rate limiting). Uploads are real — bytes go through a storage adapter (local disk by default) and play back over signed, expiring, Range-capable URLs. Transcoding is still stubbed.
 - **Phase 1** (dubbing): pipeline runs end-to-end with local providers; job and track state in PostgreSQL.
 - **Phase 2** (money): double-entry ledger in PostgreSQL, 90/10 split, daily UPI payouts; UPI transfer simulated.
 - **Phase 3** (live): simulcast, moderated chat, polls and the AI Clip Factory, stored in PostgreSQL; RTMP fan-out modelled.
 - **Phase 4** (community): memberships, superfan badges, watch parties in PostgreSQL; revenue posted to the ledger.
 - **Ownership**: a creator can export everything they own (videos, tracks, ledger, payouts, members, streams) as one JSON bundle — the "no lock-in" promise, implemented.
 
-**Not real yet (needs credentials/infra):** SMS delivery for the OTP, ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real across every service. All sit behind adapters.
+**Not real yet (needs credentials/infra):** SMS delivery for the OTP, ASR/TTS/voice-clone providers, the UPI transfer, RTMP fan-out, media transcoding (HLS + bitrates), and S3/R2 object storage — the `s3` storage adapter is declared but not implemented, so `MEDIA_PROVIDER=s3` fails closed. Persistence and local media storage are real. All sit behind adapters.
