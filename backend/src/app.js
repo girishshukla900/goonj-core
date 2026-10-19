@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.js';
 import videoRoutes from './routes/videos.js';
 import feedRoutes from './routes/feed.js';
 import earningsRoutes from './routes/earnings.js';
+import liveRoutes from './routes/live.js';
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,7 @@ export function createApp() {
   app.use('/v1/videos', videoRoutes);
   app.use('/v1/feed', feedRoutes);
   app.use('/v1/earnings', earningsRoutes);
+  app.use('/v1/live', liveRoutes);
 
   app.use((err, req, res, next) => {
     console.error(err);
