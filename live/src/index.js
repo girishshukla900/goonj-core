@@ -1,8 +1,8 @@
-// Goonj live service — HTTP API (zero dependencies, node:http).
+// Goonj live service — HTTP API. Streams, chat, polls and clips live in Postgres.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { store } from './store.js';
+import * as repo from '../../db/src/live_repo.js';
 import { createStream, startStream, stopStream, DESTINATIONS } from './simulcast.js';
 import { postMessage, chatFor, createPoll, vote } from './chat.js';
 import { generateClips, clipsFor, OUTPUT_DIR } from './clips.js';
@@ -27,8 +27,8 @@ const TYPES = { '.json': 'application/json', '.vtt': 'text/vtt' };
 export function createServer() {
   return http.createServer(async (req, res) => {
     const p = new URL(req.url, 'http://localhost').pathname;
-    const getStream = (id) => {
-      const s = store.streams.get(id);
+    const needStream = async (id) => {
+      const s = await repo.getStream(id);
       if (!s) { const e = new Error('stream_not_found'); e.status = 404; throw e; }
       return s;
     };
@@ -41,57 +41,53 @@ export function createServer() {
       if (req.method === 'POST' && p === '/streams') {
         const b = await readJson(req);
         if (!b.channel_id) return json(res, 400, { error: 'channel_id required' });
-        const stream = createStream(b);
-        store.streams.set(stream.id, stream);
-        return json(res, 201, stream);
+        return json(res, 201, await createStream(b));
       }
 
       const mStream = p.match(/^\/streams\/([^/]+)$/);
-      if (req.method === 'GET' && mStream) return json(res, 200, getStream(mStream[1]));
+      if (req.method === 'GET' && mStream) return json(res, 200, await needStream(mStream[1]));
 
       const mStart = p.match(/^\/streams\/([^/]+)\/start$/);
-      if (req.method === 'POST' && mStart) return json(res, 200, startStream(getStream(mStart[1])));
+      if (req.method === 'POST' && mStart) return json(res, 200, await startStream(mStart[1]));
 
       const mStop = p.match(/^\/streams\/([^/]+)\/stop$/);
-      if (req.method === 'POST' && mStop) return json(res, 200, stopStream(getStream(mStop[1])));
+      if (req.method === 'POST' && mStop) return json(res, 200, await stopStream(mStop[1]));
 
       const mChat = p.match(/^\/streams\/([^/]+)\/chat$/);
       if (mChat && req.method === 'POST') {
         const b = await readJson(req);
-        const msg = postMessage(getStream(mChat[1]), b);
+        const msg = await postMessage(await needStream(mChat[1]), b);
         return json(res, msg.blocked ? 202 : 201, msg);
       }
       if (mChat && req.method === 'GET') {
-        return json(res, 200, { stream_id: mChat[1], messages: chatFor(mChat[1]) });
+        return json(res, 200, { stream_id: mChat[1], messages: await chatFor(mChat[1]) });
       }
 
       const mPolls = p.match(/^\/streams\/([^/]+)\/polls$/);
       if (req.method === 'POST' && mPolls) {
         const b = await readJson(req);
-        return json(res, 201, createPoll(getStream(mPolls[1]), b));
+        return json(res, 201, await createPoll(await needStream(mPolls[1]), b));
       }
 
       const mVote = p.match(/^\/polls\/([^/]+)\/vote$/);
       if (req.method === 'POST' && mVote) {
-        const poll = store.polls.get(mVote[1]);
-        if (!poll) return json(res, 404, { error: 'poll_not_found' });
         const b = await readJson(req);
-        return json(res, 200, vote(poll, b.option));
+        return json(res, 200, await vote(mVote[1], b.option));
       }
 
       const mGetPoll = p.match(/^\/polls\/([^/]+)$/);
       if (req.method === 'GET' && mGetPoll) {
-        const poll = store.polls.get(mGetPoll[1]);
+        const poll = await repo.getPoll(mGetPoll[1]);
         return poll ? json(res, 200, poll) : json(res, 404, { error: 'poll_not_found' });
       }
 
       const mClips = p.match(/^\/streams\/([^/]+)\/clips$/);
       if (mClips && req.method === 'POST') {
         const b = await readJson(req);
-        return json(res, 201, { stream_id: mClips[1], clips: generateClips(getStream(mClips[1]), b) });
+        return json(res, 201, { stream_id: mClips[1], clips: await generateClips(await needStream(mClips[1]), b) });
       }
       if (mClips && req.method === 'GET') {
-        return json(res, 200, { stream_id: mClips[1], clips: clipsFor(mClips[1]) });
+        return json(res, 200, { stream_id: mClips[1], clips: await clipsFor(mClips[1]) });
       }
 
       if (req.method === 'GET' && p.startsWith('/clips/')) {
