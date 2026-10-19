@@ -187,7 +187,14 @@ async function main() {
     await click('.card');
     await waitFor(`!!document.querySelector('#dubChips .chip')`);
     await click('#dubChips .chip');
-    const dubNote = await waitFor(`(function(){var e=document.querySelector('#dubNote'); return e && e.innerText.indexOf('Queued')===0 ? e.innerText : null;})()`);
+    // This step crosses browser -> API -> dubbing service, so on a loaded CI
+    // runner it needs more room than the default 8s. Log what the UI actually
+    // shows if it still does not settle, so a failure is diagnosable.
+    const dubNote = await waitFor(`(function(){var e=document.querySelector('#dubNote'); return e && e.innerText.indexOf('Queued')===0 ? e.innerText : null;})()`, 20000);
+    if (!dubNote) {
+      const seen = await evaluate(`document.querySelector('#dubNote') ? document.querySelector('#dubNote').innerText : '(no #dubNote element)'`);
+      console.log('  dub note after click:', JSON.stringify(seen));
+    }
     assert('AI dub request works from the UI', !!dubNote);
 
     ws.close();
