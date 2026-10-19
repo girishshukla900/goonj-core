@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Goonj API — Phase 0 foundation (auth, upload, feed, earnings)",
+  "description": "Goonj API — auth, upload, feed, earnings, live, community",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node test/smoke.js"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
