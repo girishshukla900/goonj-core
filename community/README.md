@@ -1,7 +1,7 @@
 # Goonj community service (Phase 4)
 
 Fan clubs: memberships, tiers, superfan badges, watch parties and members-only
-posts. Zero dependencies (Node `node:http`).
+posts. Zero dependencies (Node `node:http`). Tiers, memberships, watch parties and posts are stored in **PostgreSQL**.
 
 ## Tiers
 Defaults per channel (creators can override):
