@@ -22,8 +22,8 @@ docker-compose.yml   Full local stack
 Persistence runs on **PostgreSQL**. One connection handle, two backends:
 `DATABASE_URL=postgres://...` uses a real Postgres server; anything else uses
 **PGlite** (Postgres compiled to WASM, in-process) — so the same SQL runs in
-dev, in tests and in production. The API's `/v1/feed` and the **payments
-ledger** already run on it.
+dev, in tests and in production. The **feed, the money ledger, live and
+community** all run on it; dubbing is the one service still in memory.
 
 ```bash
 cd db && npm install && npm test      # 11 assertions against real Postgres
@@ -79,7 +79,7 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 - **Phase 0** (API skeleton): implemented; the feed now reads from PostgreSQL; media storage/transcode still stubbed.
 - **Phase 1** (dubbing): pipeline runs end-to-end with local providers.
 - **Phase 2** (money): double-entry ledger in PostgreSQL, 90/10 split, daily UPI payouts; UPI transfer simulated.
-- **Phase 3** (live): simulcast, moderated chat, polls, AI Clip Factory; RTMP fan-out modelled.
-- **Phase 4** (community): memberships, superfan badges, watch parties; revenue posted to the ledger.
+- **Phase 3** (live): simulcast, moderated chat, polls and the AI Clip Factory, stored in PostgreSQL; RTMP fan-out modelled.
+- **Phase 4** (community): memberships, superfan badges, watch parties in PostgreSQL; revenue posted to the ledger.
 
-**Not real yet (needs credentials/infra):** ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real for the **feed and the money ledger**; dubbing, live and community still use in-memory stores and can adopt the same repositories. All sit behind adapters.
+**Not real yet (needs credentials/infra):** ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real for the feed, money, live and community; only dubbing keeps its state in memory. All sit behind adapters.
