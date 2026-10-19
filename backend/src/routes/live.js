@@ -28,6 +28,17 @@ router.get('/streams/:id', requireAuth, (req, res) => {
   proxy(res, `${config.liveUrl}/streams/${req.params.id}`, { method: 'GET' });
 });
 
+// Live chat (moderated by the live service).
+router.post('/streams/:id/chat', requireAuth, (req, res) => {
+  if (!config.liveUrl) return res.status(503).json({ error: 'LIVE_URL not set' });
+  proxy(res, `${config.liveUrl}/streams/${req.params.id}/chat`, post(req.body));
+});
+
+router.get('/streams/:id/chat', requireAuth, (req, res) => {
+  if (!config.liveUrl) return res.status(503).json({ error: 'LIVE_URL not set' });
+  proxy(res, `${config.liveUrl}/streams/${req.params.id}/chat`, { method: 'GET' });
+});
+
 // AI Clip Factory: turn the stream into shorts.
 router.post('/streams/:id/clips', requireAuth, (req, res) => {
   if (!config.liveUrl) return res.status(202).json({ stream_id: req.params.id, clips: [], note: 'LIVE_URL not set' });
