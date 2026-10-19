@@ -43,27 +43,44 @@ CREATE TABLE IF NOT EXISTS video_assets (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS earnings_ledger (
-  id             BIGSERIAL PRIMARY KEY,
-  channel_id     BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-  video_id       BIGINT REFERENCES videos(id) ON DELETE SET NULL,
-  source         TEXT NOT NULL,
-  gross_paise    BIGINT NOT NULL,
-  creator_paise  BIGINT NOT NULL,
-  platform_paise BIGINT NOT NULL,
-  ref            TEXT,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+-- ---- Double-entry ledger (the money layer) ----
+-- Convention: signed amounts, positive = credit, negative = debit.
+-- Every transaction's entries must sum to zero, so the journal always balances.
+CREATE TABLE IF NOT EXISTS ledger_accounts (
+  name          TEXT PRIMARY KEY,
+  balance_paise BIGINT NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS earnings_channel_idx ON earnings_ledger (channel_id, created_at);
+
+CREATE TABLE IF NOT EXISTS ledger_entries (
+  id           BIGSERIAL PRIMARY KEY,
+  txn_id       TEXT NOT NULL,
+  account      TEXT NOT NULL,
+  amount_paise BIGINT NOT NULL,
+  kind         TEXT NOT NULL,
+  source       TEXT,
+  channel_id   TEXT,
+  video_id     TEXT,
+  ref          TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ledger_txn_idx ON ledger_entries (txn_id);
+CREATE INDEX IF NOT EXISTS ledger_account_idx ON ledger_entries (account);
+CREATE INDEX IF NOT EXISTS ledger_channel_idx ON ledger_entries (channel_id, created_at);
 
 CREATE TABLE IF NOT EXISTS payouts (
   id           BIGSERIAL PRIMARY KEY,
-  channel_id   BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  channel_id   TEXT NOT NULL,
   amount_paise BIGINT NOT NULL,
   upi_id       TEXT NOT NULL,
-  status       TEXT NOT NULL DEFAULT 'queued',
+  status       TEXT NOT NULL DEFAULT 'sent',
   utr          TEXT,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS channel_upi (
+  channel_id TEXT PRIMARY KEY,
+  upi_id     TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS memberships (
