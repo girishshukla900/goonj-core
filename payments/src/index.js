@@ -1,8 +1,7 @@
-// Goonj payments service — HTTP API (zero dependencies, node:http).
+// Goonj payments service — HTTP API. The ledger is backed by PostgreSQL.
 import http from 'node:http';
-import { store } from './store.js';
-import { split, toRupees } from './money.js';
-import { recordEarning, creatorBalance, journalBalances, journalTotal } from './ledger.js';
+import { toRupees } from './money.js';
+import { recordEarning, creatorBalance, journalBalances, journalTotal, entriesFor, accounts } from './ledger.js';
 import { requestPayout, dailyRun, payoutsFor, registerUpi } from './payouts.js';
 
 function json(res, code, body) {
@@ -20,69 +19,66 @@ function readJson(req) {
   });
 }
 
-const view = (channelId) => ({
-  channel_id: channelId,
-  balance_paise: creatorBalance(channelId),
-  balance_rupees: toRupees(creatorBalance(channelId)),
-});
+async function view(channelId) {
+  const balance = await creatorBalance(channelId);
+  return { channel_id: channelId, balance_paise: balance, balance_rupees: toRupees(balance) };
+}
 
 export function createServer() {
   return http.createServer(async (req, res) => {
     const p = new URL(req.url, 'http://localhost').pathname;
     try {
       if (req.method === 'GET' && p === '/health') {
-        return json(res, 200, { ok: true, service: 'goonj-payments', balanced: journalBalances() });
+        return json(res, 200, { ok: true, service: 'goonj-payments', balanced: await journalBalances() });
       }
 
       if (req.method === 'POST' && p === '/earnings') {
         const b = await readJson(req);
         if (!b.channel_id || !b.gross_paise) return json(res, 400, { error: 'channel_id and gross_paise required' });
-        const tx = recordEarning({
+        const tx = await recordEarning({
           channel_id: b.channel_id, video_id: b.video_id, source: b.source || 'ad',
-          gross_paise: b.gross_paise, ref: b.ref, splitFn: split,
+          gross_paise: b.gross_paise, ref: b.ref,
         });
-        const creator = tx.entries.find((e) => e.account.startsWith('creator_payable')).amount;
-        const platform = tx.entries.find((e) => e.account === 'platform_revenue').amount;
         return json(res, 201, {
-          txn_id: tx.id, gross_paise: b.gross_paise,
-          creator_paise: creator, platform_paise: platform,
-          ...view(b.channel_id),
+          txn_id: tx.txn_id, gross_paise: b.gross_paise,
+          creator_paise: tx.creator_paise, platform_paise: tx.platform_paise,
+          ...(await view(b.channel_id)),
         });
       }
 
       const balMatch = p.match(/^\/balance\/([^/]+)$/);
-      if (req.method === 'GET' && balMatch) return json(res, 200, view(balMatch[1]));
+      if (req.method === 'GET' && balMatch) return json(res, 200, await view(balMatch[1]));
 
       const ledMatch = p.match(/^\/ledger\/([^/]+)$/);
       if (req.method === 'GET' && ledMatch) {
-        const entries = store.entries.filter((t) => t.channel_id === ledMatch[1]);
-        return json(res, 200, { channel_id: ledMatch[1], entries });
+        return json(res, 200, { channel_id: ledMatch[1], entries: await entriesFor(ledMatch[1]) });
       }
 
       if (req.method === 'POST' && p === '/channels/upi') {
         const b = await readJson(req);
-        return json(res, 200, registerUpi({ channel_id: b.channel_id, upi_id: b.upi_id }));
+        return json(res, 200, await registerUpi({ channel_id: b.channel_id, upi_id: b.upi_id }));
       }
 
       if (req.method === 'POST' && p === '/payouts') {
         const b = await readJson(req);
-        const amount = b.amount_paise || creatorBalance(b.channel_id);
-        const payout = requestPayout({ channel_id: b.channel_id, upi_id: b.upi_id, amount_paise: amount });
-        return json(res, 202, { ...payout, ...view(b.channel_id) });
+        const amount = b.amount_paise || (await creatorBalance(b.channel_id));
+        const payout = await requestPayout({ channel_id: b.channel_id, upi_id: b.upi_id, amount_paise: amount });
+        return json(res, 202, { ...payout, ...(await view(b.channel_id)) });
       }
 
       if (req.method === 'POST' && p === '/payouts/run') {
         const b = await readJson(req);
-        return json(res, 200, dailyRun({ min_paise: b.min_paise ?? 100 }));
+        return json(res, 200, await dailyRun({ min_paise: b.min_paise ?? 100 }));
       }
 
       const poMatch = p.match(/^\/payouts\/([^/]+)$/);
-      if (req.method === 'GET' && poMatch) return json(res, 200, { channel_id: poMatch[1], payouts: payoutsFor(poMatch[1]) });
+      if (req.method === 'GET' && poMatch) {
+        return json(res, 200, { channel_id: poMatch[1], payouts: await payoutsFor(poMatch[1]) });
+      }
 
       if (req.method === 'GET' && p === '/journal') {
         return json(res, 200, {
-          balanced: journalBalances(), total: journalTotal(),
-          accounts: [...store.accounts.entries()].map(([account, paise]) => ({ account, paise })),
+          balanced: await journalBalances(), total: await journalTotal(), accounts: await accounts(),
         });
       }
 
