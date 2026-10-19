@@ -1,0 +1,14 @@
+{
+  "name": "goonj-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Goonj web client + creator studio",
+  "scripts": {
+    "start": "node dev-server.js 4500",
+    "test": "node test/client.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}
