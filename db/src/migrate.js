@@ -1,4 +1,4 @@
-// Apply schema.sql. Idempotent.
+// Apply schema.sql. Idempotent; memoised so it runs once per process.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,12 @@ export async function migrate() {
   const db = await getDb();
   await db.exec(sql);
   return db.kind;
+}
+
+let ready = null;
+export function ensureSchema() {
+  if (!ready) ready = migrate();
+  return ready;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
