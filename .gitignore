@@ -6,3 +6,4 @@ dist/
 build/
 .dart_tool/
 .flutter-plugins
+dubbing/output/
