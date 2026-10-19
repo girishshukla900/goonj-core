@@ -12,6 +12,7 @@ dubbing/    AI dubbing service (Phase 1): ASR -> ... -> publish
 payments/   Money layer (Phase 2): ledger, 90/10 split, daily UPI payouts
 live/       Live service (Phase 3): simulcast, chat, AI Clip Factory
 community/  Fan clubs (Phase 4): memberships, badges, watch parties
+web/        Web client app (talks to the real API)
 app/        Flutter app skeleton (Android, iOS, Web)
 test/       System test + runner
 docs/       Architecture notes
@@ -29,10 +30,17 @@ community** all run on it; dubbing is the one service still in memory.
 cd db && npm install && npm test      # 11 assertions against real Postgres
 ```
 
+## Run the web client
+```bash
+cd web && npm install && node dev-server.js 4500
+# open http://localhost:4500/
+```
+
 ## Run everything with Docker (one command)
 ```bash
 docker compose up --build
 # API :4000 · dubbing :4100 · payments :4200 · live :4300 · community :4400
+# web client: cd web && npm install && node dev-server.js 4500
 ```
 
 ## Run everything by hand
@@ -58,6 +66,7 @@ npm test          # runs all six suites (root)
 | live | simulcast, moderated chat, polls, AI Clip Factory |
 | community | memberships, badges, watch parties, money into the ledger |
 | system | the full creator journey across all five services |
+| web | the client renders live API data in headless Chromium |
 
 CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 
