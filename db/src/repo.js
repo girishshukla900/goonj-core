@@ -1,16 +1,8 @@
-// Repositories: all SQL lives here. Amounts are integer paise.
+// Repositories: all SQL lives here. Money functions come from the ledger.
 import { getDb } from './connect.js';
-import { migrate } from './migrate.js';
+import { ensureSchema } from './migrate.js';
 
-const CREATOR_SHARE = 0.90;
-
-let ready = null;
-function ready_() {
-  if (!ready) ready = migrate();
-  return ready;
-}
-
-const num = (v) => (v == null ? 0 : Number(v));
+const ready_ = ensureSchema;
 
 export async function createUser({ phone, role = 'viewer' }) {
   await ready_();
@@ -67,45 +59,9 @@ export async function feed({ lang, region = null, limit = 20 }) {
   return rows;
 }
 
-export async function recordEarning({ channel_id, video_id = null, source = 'ad', gross_paise, ref = null }) {
-  await ready_();
-  const creator = Math.round(gross_paise * CREATOR_SHARE);
-  const platform = gross_paise - creator;
-  const db = await getDb();
-  const { rows } = await db.query(
-    `INSERT INTO earnings_ledger (channel_id, video_id, source, gross_paise, creator_paise, platform_paise, ref)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [channel_id, video_id, source, gross_paise, creator, platform, ref]);
-  return rows[0];
-}
-
-export async function creatorBalance(channel_id) {
-  await ready_();
-  const db = await getDb();
-  const { rows } = await db.query(
-    `SELECT COALESCE(SUM(creator_paise), 0)::bigint AS earned,
-            COALESCE((SELECT SUM(amount_paise) FROM payouts WHERE channel_id = $1), 0)::bigint AS paid
-       FROM earnings_ledger WHERE channel_id = $1`, [channel_id]);
-  return num(rows[0].earned) - num(rows[0].paid);
-}
-
-export async function insertPayout({ channel_id, amount_paise, upi_id, status = 'sent', utr = null }) {
-  await ready_();
-  const db = await getDb();
-  const { rows } = await db.query(
-    `INSERT INTO payouts (channel_id, amount_paise, upi_id, status, utr)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [channel_id, amount_paise, upi_id, status, utr]);
-  return rows[0];
-}
-
-/** Invariant check: gross always equals creator + platform. */
-export async function ledgerCheck() {
-  await ready_();
-  const db = await getDb();
-  const { rows } = await db.query(
-    `SELECT COALESCE(SUM(gross_paise), 0)::bigint AS gross,
-            COALESCE(SUM(creator_paise + platform_paise), 0)::bigint AS parts
-       FROM earnings_ledger`);
-  return { gross: num(rows[0].gross), parts: num(rows[0].parts), ok: num(rows[0].gross) === num(rows[0].parts) };
-}
+// Money lives in the double-entry ledger.
+export {
+  recordEarning, creatorBalance, insertPayout, requestPayout, ledgerCheck,
+  balanceOf, accounts, journalBalances, journalTotal, entriesFor, registerUpi,
+  dailyRun, payoutsFor, postTransaction, creatorPayable, split,
+} from './ledger.js';
