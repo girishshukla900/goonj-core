@@ -12,10 +12,17 @@
 client -> API gateway -> catalog -> signed CDN URL -> CDN -> player.
 The player never talks to the origin.
 
+## Data layer (`db/`)
+PostgreSQL via one connection handle: a real server when `DATABASE_URL` is a
+`postgres://` URL, otherwise **PGlite** (Postgres in WASM) so the same SQL runs
+in dev, tests and production. Repositories in `db/src/repo.js`; the API's feed
+route reads from here. Amounts are integer paise.
+
 ## Services
 | Service | Phase | Responsibility |
 |---|---|---|
-| `backend` | 0 | Auth, upload, feed, earnings, live + community proxy |
+| `db` | 0 | Schema, migrations, repositories (PostgreSQL / PGlite) |
+| `backend` | 0 | Auth, upload, feed (from Postgres), earnings, live + community proxy |
 | `dubbing` | 1 | ASR -> translate -> voice clone -> TTS -> align -> mix -> publish |
 | `payments` | 2 | Double-entry ledger, 90/10 split, daily UPI payouts |
 | `live` | 3 | Simulcast, moderated chat, polls, AI Clip Factory |
@@ -37,7 +44,7 @@ Peaks are detected from live-chat activity (10s buckets), then cut into
 non-overlapping 30s clips with titles, hooks and captions.
 
 ## Status by phase
-- **Phase 0** — implemented; feed DB query and media storage/transcode stubbed.
+- **Phase 0** — implemented; the feed reads from PostgreSQL; media storage/transcode stubbed.
 - **Phase 1** — dubbing pipeline implemented with local providers.
 - **Phase 2** — ledger, split and daily UPI payouts implemented; UPI transfer simulated.
 - **Phase 3** — simulcast, chat, polls, clip factory implemented; RTMP fan-out modelled.
