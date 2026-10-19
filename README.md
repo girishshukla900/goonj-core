@@ -6,6 +6,7 @@ platform. The wedge is AI dubbing in the creator's own voice; see
 
 ## What's here
 ```
+db/         Persistence: PostgreSQL schema, migrations, repositories
 backend/    Node.js (Express) API: auth, upload, feed, earnings, live, community
 dubbing/    AI dubbing service (Phase 1): ASR -> ... -> publish
 payments/   Money layer (Phase 2): ledger, 90/10 split, daily UPI payouts
@@ -15,6 +16,16 @@ app/        Flutter app skeleton (Android, iOS, Web)
 test/       System test + runner
 docs/       Architecture notes
 docker-compose.yml   Full local stack
+```
+
+## Data
+Persistence runs on **PostgreSQL**. One connection handle, two backends:
+`DATABASE_URL=postgres://...` uses a real Postgres server; anything else uses
+**PGlite** (Postgres compiled to WASM, in-process) — so the same SQL runs in
+dev, in tests and in production. The API's `/v1/feed` already reads from it.
+
+```bash
+cd db && npm install && npm test      # 11 assertions against real Postgres
 ```
 
 ## Run everything with Docker (one command)
@@ -39,7 +50,8 @@ npm test          # runs all six suites (root)
 ```
 | Suite | What it proves |
 |---|---|
-| backend | auth, upload, feed, dub + payout routes |
+| db | schema, regional-first feed query, ledger, payouts (real Postgres) |
+| backend | auth, upload, dub route, feed served from the database |
 | dubbing | full pipeline writes real WAV + VTT tracks |
 | payments | 90/10 split, balanced double-entry ledger, payouts |
 | live | simulcast, moderated chat, polls, AI Clip Factory |
@@ -63,10 +75,10 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 | `POST /v1/community/memberships` | Join a fan club | user |
 
 ## Status
-- **Phase 0** (API skeleton): implemented; feed DB query and media provider stubbed.
+- **Phase 0** (API skeleton): implemented; the feed now reads from PostgreSQL; media storage/transcode still stubbed.
 - **Phase 1** (dubbing): pipeline runs end-to-end with local providers.
 - **Phase 2** (money): double-entry ledger, 90/10 split, daily UPI payouts; UPI transfer simulated.
 - **Phase 3** (live): simulcast, moderated chat, polls, AI Clip Factory; RTMP fan-out modelled.
 - **Phase 4** (community): memberships, superfan badges, watch parties; revenue posted to the ledger.
 
-**Not real yet (needs credentials/infra):** ASR/TTS/voice-clone providers, the UPI transfer, RTMP fan-out, and Postgres/Redis persistence (services are in-memory). All sit behind adapters.
+**Not real yet (needs credentials/infra):** ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real for the feed; the other services still use in-memory stores and can adopt the same repositories. All sit behind adapters.
