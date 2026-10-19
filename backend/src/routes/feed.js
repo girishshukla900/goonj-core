@@ -1,12 +1,19 @@
 import { Router } from 'express';
+import { feed } from '../../../db/src/repo.js';
 
 const router = Router();
 
-// Phase 0 stub. Replace with a Postgres query over videos + watch_events,
-// ordered regional-first (source_lang = lang, then region).
-router.get('/', (req, res) => {
+// Regional-first feed, served from Postgres (PGlite in dev).
+// The viewer's language first, then their region, then newest.
+router.get('/', async (req, res, next) => {
   const { lang, region } = req.query;
-  res.json({ lang: lang || null, region: region || null, items: [] });
+  try {
+    if (!lang) return res.json({ lang: null, region: region || null, items: [] });
+    const items = await feed({ lang, region: region || null });
+    res.json({ lang, region: region || null, items });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
