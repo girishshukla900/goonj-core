@@ -183,8 +183,12 @@ async function main() {
 
     // 7. Request an AI dub from the watch overlay.
     await click('[data-tab="home"]');
-    await waitFor(`!!document.querySelector('.card')`);
-    await click('.card');
+    // The live screen also renders .card elements (its clips) and they linger
+    // in #main until the home feed re-renders, so a bare `.card` query can hit
+    // a stale clip and open nothing. Wait for a *home* card specifically:
+    // home cards are <article class="card">, clip cards are <div class="card">.
+    await waitFor(`!!document.querySelector('#main article.card')`);
+    await click('#main article.card');
     await waitFor(`!!document.querySelector('#dubChips .chip')`);
     await click('#dubChips .chip');
     // This step crosses browser -> API -> dubbing service, so on a loaded CI
