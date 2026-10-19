@@ -9,6 +9,7 @@
     "test:system": "node test/system.test.js"
   },
   "devDependencies": {
+    "pg": "^8.12.0",
     "ws": "^8.22.0"
   }
 }

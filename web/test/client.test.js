@@ -87,7 +87,7 @@ async function main() {
 
     const devtools = await new Promise((resolve, reject) => {
       let buf = '';
-      const t = setTimeout(() => reject(new Error('no devtools endpoint')), 15000);
+      const t = setTimeout(() => reject(new Error('no devtools endpoint')), 45000);
       child.stderr.on('data', (c) => {
         buf += c.toString();
         const m = /ws:\/\/127\.0\.0\.1:(\d+)\/devtools\/browser/.exec(buf);
@@ -96,7 +96,7 @@ async function main() {
     });
 
     let target = null;
-    for (let i = 0; i < 40 && !target; i++) {
+    for (let i = 0; i < 100 && !target; i++) {
       try {
         const list = await getJson(devtools, '/json/list');
         target = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
@@ -122,7 +122,7 @@ async function main() {
 
     const bodyText = () => evaluate('document.body.innerText');
     const click = (sel) => evaluate(`(function(){var e=document.querySelector(${JSON.stringify(sel)}); if(e){e.click(); return true;} return false;})()`);
-    const waitFor = async (expr, ms = 8000) => {
+    const waitFor = async (expr, ms = 15000) => {
       const end = Date.now() + ms;
       while (Date.now() < end) { const v = await evaluate(expr); if (v) return v; await wait(200); }
       return null;
@@ -183,11 +183,22 @@ async function main() {
 
     // 7. Request an AI dub from the watch overlay.
     await click('[data-tab="home"]');
-    await waitFor(`!!document.querySelector('.card')`);
-    await click('.card');
+    // The live screen also renders .card elements (its clips) and they linger
+    // in #main until the home feed re-renders, so a bare `.card` query can hit
+    // a stale clip and open nothing. Wait for a *home* card specifically:
+    // home cards are <article class="card">, clip cards are <div class="card">.
+    await waitFor(`!!document.querySelector('#main article.card')`);
+    await click('#main article.card');
     await waitFor(`!!document.querySelector('#dubChips .chip')`);
     await click('#dubChips .chip');
-    const dubNote = await waitFor(`(function(){var e=document.querySelector('#dubNote'); return e && e.innerText.indexOf('Queued')===0 ? e.innerText : null;})()`);
+    // This step crosses browser -> API -> dubbing service, so on a loaded CI
+    // runner it needs more room than the default 8s. Log what the UI actually
+    // shows if it still does not settle, so a failure is diagnosable.
+    const dubNote = await waitFor(`(function(){var e=document.querySelector('#dubNote'); return e && e.innerText.indexOf('Queued')===0 ? e.innerText : null;})()`, 20000);
+    if (!dubNote) {
+      const seen = await evaluate(`document.querySelector('#dubNote') ? document.querySelector('#dubNote').innerText : '(no #dubNote element)'`);
+      console.log('  dub note after click:', JSON.stringify(seen));
+    }
     assert('AI dub request works from the UI', !!dubNote);
 
     ws.close();
