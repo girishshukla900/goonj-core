@@ -11,4 +11,5 @@ export const config = {
   uploadUrlTtl: Number(process.env.UPLOAD_URL_TTL || 900),
   dubbingUrl: process.env.DUBBING_URL || '',
   paymentsUrl: process.env.PAYMENTS_URL || '',
+  liveUrl: process.env.LIVE_URL || '',
 };
