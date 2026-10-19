@@ -1,7 +1,9 @@
 # Goonj payments service (Phase 2)
 
 The money layer: a double-entry ledger, a 90/10 revenue split, and daily UPI
-payouts. Zero dependencies (Node `node:http` only).
+payouts. The ledger is **backed by PostgreSQL** (see `db/src/ledger.js`): a real
+Postgres server when `DATABASE_URL=postgres://...`, otherwise PGlite, so the
+same SQL runs in dev, tests and production. Money survives restarts.
 
 ## Rules
 - Creator keeps **90%**, platform keeps **10%**.
@@ -11,7 +13,7 @@ payouts. Zero dependencies (Node `node:http` only).
 - Rounding favours the creator; `creator + platform` always equals `gross`.
 - Payouts are **daily and automatic**, and can be requested any time.
 
-## Accounts
+## Accounts (rows in `ledger_accounts`)
 | Account | Meaning |
 |---|---|
 | `external_income` | Source of all money entering the platform |
