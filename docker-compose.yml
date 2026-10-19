@@ -21,10 +21,14 @@ services:
     ports: ["6379:6379"]
 
   dubbing:
-    build: ./dubbing
+    build:
+      context: .
+      dockerfile: dubbing/Dockerfile
     environment:
       DUBBING_PORT: "4100"
+      DATABASE_URL: "postgres://goonj:goonj@postgres:5432/goonj"
     ports: ["4100:4100"]
+    depends_on: [postgres]
 
   payments:
     build:
