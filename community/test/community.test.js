@@ -7,7 +7,7 @@ function req(port, method, urlPath, body) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const r = http.request(
-      { host: '127.0.0.1', port, method, path: urlPath,
+      { host: '127.0.0.1', port, method, path: urlPath, agent: false,
         headers: { 'content-type': 'application/json', ...(data ? { 'content-length': Buffer.byteLength(data) } : {}) } },
       (res) => { let out = ''; res.on('data', (c) => (out += c)); res.on('end', () => { let b = null; try { b = out ? JSON.parse(out) : null; } catch { b = out; } resolve({ status: res.statusCode, body: b }); }); },
     );
