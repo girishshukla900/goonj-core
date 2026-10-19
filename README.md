@@ -67,7 +67,7 @@ npm test          # runs all six suites (root)
 | live | simulcast, moderated chat, polls, AI Clip Factory |
 | community | memberships, badges, watch parties, money into the ledger |
 | system | the full creator journey across all five services |
-| web | the client renders live API data in headless Chromium |
+| web | drives the full user journey in a real browser (sign in, studio payout, club, live + clips, dub) |
 
 CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 
@@ -82,6 +82,7 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 | `GET /v1/earnings?channel_id=` | Balance + ledger | creator |
 | `POST /v1/earnings/payouts` | Request a UPI payout | creator |
 | `POST /v1/live/streams` | Create a live stream | creator |
+| `POST /v1/live/streams/{id}/chat` | Live chat (moderated) | user |
 | `POST /v1/live/streams/{id}/clips` | Generate shorts | creator |
 | `POST /v1/community/memberships` | Join a fan club | user |
 
