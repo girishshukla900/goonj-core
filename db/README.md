@@ -20,13 +20,17 @@ npm run seed      # insert a small demo dataset
 ```
 
 ## Schema
-`users`, `channels`, `videos`, `video_assets`, `earnings_ledger`, `payouts`,
-`memberships` — see `schema.sql`.
+`users`, `channels`, `videos`, `video_assets`, `memberships`, and the money
+tables `ledger_accounts`, `ledger_entries`, `payouts`, `channel_upi` — see
+`schema.sql`.
 
 ## Repositories (`src/repo.js`)
 `createUser`, `createChannel`, `insertVideo`, `publishVideo`,
-`feed({lang, region})`, `recordEarning`, `creatorBalance`, `insertPayout`,
-`ledgerCheck`.
+`feed({lang, region})`.
+
+The double-entry ledger lives in `src/ledger.js`: `postTransaction`,
+`recordEarning`, `creatorBalance`, `requestPayout`, `dailyRun`, `registerUpi`,
+`journalBalances`, `ledgerCheck`. The payments service is built on it.
 
 `feed` is the regional-first query: the viewer's language first, then their
 region, then newest.
