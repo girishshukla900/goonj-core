@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { config } from '../config.js';
 
 const router = Router();
 
@@ -23,12 +24,30 @@ router.post('/:id/publish', requireAuth, (req, res) => {
 });
 
 // Request AI dubbing into target languages (Phase 1 pipeline).
-router.post('/:id/dubs', requireAuth, (req, res) => {
-  const { target_langs } = req.body || {};
-  res.status(202).json({
-    video_id: req.params.id, target_langs: target_langs || [], status: 'queued',
-    note: 'ASR -> translate -> voice clone -> TTS -> align -> mix',
-  });
+// Proxies to the dubbing service when DUBBING_URL is configured.
+router.post('/:id/dubs', requireAuth, async (req, res) => {
+  const { target_langs, channel_id, voice_model_id, source_lang } = req.body || {};
+  const langs = target_langs || [];
+  if (!config.dubbingUrl) {
+    return res.status(202).json({
+      video_id: req.params.id, target_langs: langs, status: 'queued',
+      note: 'DUBBING_URL not set; pipeline not wired. ASR -> translate -> voice clone -> TTS -> align -> mix',
+    });
+  }
+  try {
+    const upstream = await fetch(`${config.dubbingUrl}/dub`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        video_id: req.params.id, channel_id, source_lang,
+        target_langs: langs, voice_model_id,
+      }),
+    });
+    const body = await upstream.json();
+    res.status(upstream.status).json(body);
+  } catch (err) {
+    res.status(502).json({ error: 'dubbing_service_unreachable', detail: err.message });
+  }
 });
 
 router.get('/:id', (req, res) => {
