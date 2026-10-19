@@ -16,7 +16,7 @@ The API base URL can also be set once and remembered (stored in localStorage).
 - **For You** — the regional-first feed, from `GET /v1/feed`
 - **Watch** — tap a card; request an AI dub in any language (`POST /v1/videos/{id}/dubs`)
 - **Live** — create a stream, chat live, and run the AI Clip Factory (`POST /v1/live/streams`, `.../chat`, `.../clips`)
-- **Studio** — balance and UPI payout, live from the ledger (`GET /v1/earnings`, `POST .../payouts`)
+- **Studio** — balance and UPI payout, live from the ledger (`GET /v1/earnings`, `POST .../payouts`), plus **Export my data** (`GET /v1/export/summary`)
 - **Clubs** — join a tier and see the fan leaderboard (`POST /v1/community/memberships`)
 
 "Sign in" runs the phone-OTP flow against the API (dev OTP).
