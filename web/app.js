@@ -101,8 +101,13 @@ async function screenLive() {
     <div class="row"><button class="btn acc" id="goLive">Start a stream</button>
       <button class="btn" id="makeClips" disabled>Generate clips</button></div>
     <div class="note" id="liveNote">Not streaming.</div>
+    <div class="row"><input id="chatInput" placeholder="Say something in chat…" disabled
+        style="flex:1;padding:9px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface)">
+      <button class="btn" id="sendChat" disabled>Send</button></div>
+    <div class="note" id="chatList">Chat is empty.</div>
     <div class="grid" id="clips"></div>`;
   let streamId = null;
+  let chatCount = 0;
   $('#goLive').addEventListener('click', async () => {
     if (!state.token) return toast('Sign in first');
     const r = await api('/v1/live/streams', { method: 'POST', body: { channel_id: 'ch_meera', title: 'Rajma Chawal Live', source_lang: 'hi' } });
@@ -110,9 +115,23 @@ async function screenLive() {
       streamId = r.body.id;
       $('#liveNote').textContent = 'Live on: ' + r.body.destinations.map((d) => d.label).join(', ');
       $('#makeClips').disabled = false;
+      $('#chatInput').disabled = false;
+      $('#sendChat').disabled = false;
       toast('Stream created');
     } else toast('Could not start stream');
   });
+  $('#sendChat').addEventListener('click', async () => {
+    const input = $('#chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const r = await api(`/v1/live/streams/${streamId}/chat`, { method: 'POST', body: { user: 'me', text } });
+    if (r.status === 201 || r.status === 202) {
+      chatCount += 1;
+      $('#chatList').textContent = chatCount === 1 ? `me: ${text}` : $('#chatList').textContent + `\nme: ${text}`;
+      input.value = '';
+    } else toast('Message failed');
+  });
+
   $('#makeClips').addEventListener('click', async () => {
     const r = await api(`/v1/live/streams/${streamId}/clips`, { method: 'POST', body: { count: 3 } });
     const clips = (r.body && r.body.clips) || [];
