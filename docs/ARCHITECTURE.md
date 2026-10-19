@@ -42,6 +42,14 @@ is never returned in the response (it is sent by SMS); in development it is
 returned as `dev_otp` so the flow is testable. A successful verify creates the
 user and issues a JWT.
 
+## Content ownership (`db/src/export_repo.js`)
+`GET /v1/export?channel_id=` returns everything a creator owns as one JSON
+bundle: channel, videos, assets, dubbing tracks and jobs, voice models, the
+ledger, payouts, memberships, tiers, posts, watch parties, streams, chat and
+clips. A handle resolves to the channel id, so either identifier works. This is
+the "rights are yours, export any time" promise — the opposite of lock-in.
+`GET /v1/export/summary` returns a short version for the Studio screen.
+
 ## Money model (`payments/` on `db/src/ledger.js`)
 - Creator keeps 90%; platform keeps 10%. Amounts are integer **paise**.
 - The ledger is **double-entry in PostgreSQL**: every transaction sums to zero,
