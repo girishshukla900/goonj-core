@@ -1,0 +1,11 @@
+{
+  "name": "goonj-community",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Goonj community service — Phase 4 (fan clubs, memberships, watch parties)",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/community.test.js"
+  }
+}
