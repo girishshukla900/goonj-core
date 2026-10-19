@@ -47,7 +47,9 @@ services:
     depends_on: [payments]
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: "postgres://goonj:goonj@postgres:5432/goonj"
       REDIS_URL: "redis://redis:6379"
