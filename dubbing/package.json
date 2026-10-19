@@ -1,0 +1,11 @@
+{
+  "name": "goonj-dubbing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Goonj AI dubbing service — Phase 1 (ASR, translate, voice clone, TTS, align, mix)",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/pipeline.test.js"
+  }
+}
