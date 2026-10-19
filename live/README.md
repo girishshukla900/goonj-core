@@ -1,7 +1,7 @@
 # Goonj live service (Phase 3)
 
 Live streaming with **simulcast**, moderated multilingual **chat**, interactive
-**polls**, and the **AI Clip Factory**. Zero dependencies (Node `node:http`).
+**polls**, and the **AI Clip Factory**. Zero dependencies (Node `node:http`). Streams, chat, polls and clip metadata are stored in **PostgreSQL**.
 
 ## Simulcast
 One stream fans out to Goonj + YouTube + Instagram + Twitch. Goonj becomes the
