@@ -75,7 +75,7 @@ async function main() {
     const { seedDemo } = await import('../../db/src/seed.js');
     await seedDemo();
     // Give the creator a balance so the Studio screen has something to show.
-    await postJson(pay.port, '/earnings', { channel_id: 'ch_meera', source: 'ad', gross_paise: 100000 });
+    await postJson(pay.port, '/earnings', { channel_id: 'meera', source: 'ad', gross_paise: 100000 });
 
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'goonj-chrome-'));
     const url = `file://${INDEX}?api=http://127.0.0.1:${apiPort}`;
@@ -150,6 +150,11 @@ async function main() {
     await click('#payout');
     const paid = await waitFor(`(function(){var e=document.querySelector('#payoutNote'); return e && e.innerText.indexOf('Paid ₹')===0 ? e.innerText : null;})()`);
     assert('UPI payout succeeds from the UI', !!paid);
+
+    // 4b. Export my data (content ownership).
+    await click('#exportBtn');
+    const exported = await waitFor(`(function(){var e=document.querySelector('#exportNote'); return e && /^Exported \\d+ videos/.test(e.innerText) ? e.innerText : null;})()`);
+    assert('data export works from the UI', !!exported);
 
     // 5. Join a fan club and see it reflected.
     await click('[data-tab="clubs"]');
