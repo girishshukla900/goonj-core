@@ -13,6 +13,7 @@ const suites = [
   ['live',      'live/test/live.test.js'],
   ['community', 'community/test/community.test.js'],
   ['system',    'test/system.test.js'],
+  ['web',       'web/test/client.test.js'],
 ];
 
 let failed = 0;
