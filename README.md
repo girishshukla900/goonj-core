@@ -60,6 +60,7 @@ npm test          # runs all six suites (root)
 | Suite | What it proves |
 |---|---|
 | db | schema, regional-first feed query, ledger, payouts (real Postgres) |
+| auth | hashed, expiring, single-use, attempt- and rate-limited OTP |
 | backend | auth, upload, dub route, feed served from the database |
 | dubbing | full pipeline writes real WAV + VTT tracks |
 | payments | 90/10 split, balanced double-entry ledger, payouts |
@@ -85,10 +86,10 @@ CI (`.github/workflows/ci.yml`) runs `npm test` on every push.
 | `POST /v1/community/memberships` | Join a fan club | user |
 
 ## Status
-- **Phase 0** (API skeleton): implemented; the feed now reads from PostgreSQL; media storage/transcode still stubbed.
+- **Phase 0** (API skeleton): implemented; the feed reads from PostgreSQL; login is a hardened OTP flow (hashed codes, 5-minute expiry, attempt lockout, per-phone rate limiting). Media storage/transcode still stubbed.
 - **Phase 1** (dubbing): pipeline runs end-to-end with local providers; job and track state in PostgreSQL.
 - **Phase 2** (money): double-entry ledger in PostgreSQL, 90/10 split, daily UPI payouts; UPI transfer simulated.
 - **Phase 3** (live): simulcast, moderated chat, polls and the AI Clip Factory, stored in PostgreSQL; RTMP fan-out modelled.
 - **Phase 4** (community): memberships, superfan badges, watch parties in PostgreSQL; revenue posted to the ledger.
 
-**Not real yet (needs credentials/infra):** ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real across every service. All sit behind adapters.
+**Not real yet (needs credentials/infra):** SMS delivery for the OTP, ASR/TTS/voice-clone providers, the UPI transfer, and RTMP fan-out. Persistence is real across every service. All sit behind adapters.
