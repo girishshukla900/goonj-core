@@ -226,3 +226,19 @@ CREATE TABLE IF NOT EXISTS dubbing_tracks (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (video_id, lang)
 );
+
+-- ---- Auth (OTP) ----
+CREATE TABLE IF NOT EXISTS otp_codes (
+  phone      TEXT PRIMARY KEY,
+  code_hash  TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  attempts   INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS otp_requests (
+  id           BIGSERIAL PRIMARY KEY,
+  phone        TEXT NOT NULL,
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS otp_requests_phone_idx ON otp_requests (phone, requested_at);
