@@ -83,13 +83,108 @@ CREATE TABLE IF NOT EXISTS channel_upi (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+
+-- ---- Live (Phase 3) ----
+CREATE TABLE IF NOT EXISTS streams (
+  id          TEXT PRIMARY KEY,
+  channel_id  TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  source_lang TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'created',
+  ingest_key  TEXT NOT NULL,
+  started_at  TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS stream_destinations (
+  stream_id TEXT NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+  name      TEXT NOT NULL,
+  label     TEXT NOT NULL,
+  status    TEXT NOT NULL,
+  rtmp      TEXT NOT NULL,
+  PRIMARY KEY (stream_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id         TEXT PRIMARY KEY,
+  stream_id  TEXT NOT NULL,
+  user_id    TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  lang       TEXT,
+  at_seconds INTEGER NOT NULL,
+  blocked    BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS chat_stream_idx ON chat_messages (stream_id, at_seconds);
+
+CREATE TABLE IF NOT EXISTS polls (
+  id         TEXT PRIMARY KEY,
+  stream_id  TEXT NOT NULL,
+  question   TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS poll_options (
+  poll_id TEXT NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  label   TEXT NOT NULL,
+  votes   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (poll_id, label)
+);
+
+CREATE TABLE IF NOT EXISTS clips (
+  id         TEXT PRIMARY KEY,
+  stream_id  TEXT NOT NULL,
+  idx        INTEGER NOT NULL,
+  start_s    INTEGER NOT NULL,
+  end_s      INTEGER NOT NULL,
+  duration_s INTEGER NOT NULL,
+  score      INTEGER NOT NULL,
+  lang       TEXT,
+  title      TEXT NOT NULL,
+  hook       TEXT NOT NULL,
+  captions   TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---- Community (Phase 4) ----
+CREATE TABLE IF NOT EXISTS channel_tiers (
+  channel_id  TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  price_paise BIGINT NOT NULL,
+  benefits    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  PRIMARY KEY (channel_id, name)
+);
+
 CREATE TABLE IF NOT EXISTS memberships (
-  id          BIGSERIAL PRIMARY KEY,
-  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  channel_id  BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL,
+  channel_id  TEXT NOT NULL,
   tier        TEXT NOT NULL,
   price_paise BIGINT NOT NULL,
   status      TEXT NOT NULL DEFAULT 'active',
   joined_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, channel_id)
+  PRIMARY KEY (user_id, channel_id)
+);
+
+CREATE TABLE IF NOT EXISTS watch_parties (
+  id         TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL,
+  video_id   TEXT,
+  title      TEXT NOT NULL,
+  starts_at  TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS party_rsvps (
+  party_id TEXT NOT NULL REFERENCES watch_parties(id) ON DELETE CASCADE,
+  user_id  TEXT NOT NULL,
+  PRIMARY KEY (party_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS community_posts (
+  id           TEXT PRIMARY KEY,
+  channel_id   TEXT NOT NULL,
+  author_id    TEXT NOT NULL,
+  text         TEXT NOT NULL,
+  members_only BOOLEAN NOT NULL DEFAULT false,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
