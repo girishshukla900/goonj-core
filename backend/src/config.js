@@ -9,4 +9,5 @@ export const config = {
   jwtExpiry: process.env.JWT_EXPIRY || '30d',
   s3Bucket: process.env.S3_BUCKET || 'goonj-media-dev',
   uploadUrlTtl: Number(process.env.UPLOAD_URL_TTL || 900),
+  dubbingUrl: process.env.DUBBING_URL || '',
 };
