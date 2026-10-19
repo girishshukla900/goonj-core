@@ -1,21 +1,19 @@
 // AI Clip Factory: find the best moments in a long stream and cut them into
-// shorts. Peaks are detected from live-chat activity — a real signal of what
-// viewers reacted to. (Video cutting itself needs ffmpeg; this produces the
-// clip plan, titles, hooks and captions that drive it.)
+// shorts. Peaks come from live-chat activity — a real signal of what viewers
+// reacted to. Clip metadata is stored in SQL; the caption files are written to
+// disk. (Cutting the video itself needs ffmpeg.)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { store, newId } from './store.js';
-import { chatFor } from './chat.js';
+import * as repo from '../../db/src/live_repo.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OUTPUT_DIR = path.resolve(HERE, '..', 'output');
 
-const WINDOW = 10;      // seconds per activity bucket
+const WINDOW = 10;
 const CLIP_SECONDS = 30;
 const LEAD_IN = 5;
 
-/** Bucket chat activity into windows; return peaks sorted by activity. */
 export function detectPeaks(messages, { windowSec = WINDOW } = {}) {
   const buckets = new Map();
   for (const m of messages) {
@@ -27,7 +25,7 @@ export function detectPeaks(messages, { windowSec = WINDOW } = {}) {
     .sort((a, b) => b.count - a.count || a.start - b.start);
 }
 
-function toVtt(streamId, clip, messages) {
+function toVtt(clip, messages) {
   const ts = (s) => {
     const mm = String(Math.floor(s / 60)).padStart(2, '0');
     const ss = String(Math.floor(s % 60)).padStart(2, '0');
@@ -44,20 +42,16 @@ function toVtt(streamId, clip, messages) {
   return out;
 }
 
-function titleFor(stream, i, peak) {
-  const hooks = ['Best moment', 'Everyone reacted', 'You missed this', 'Peak clip', 'Must watch'];
-  return `${hooks[i % hooks.length]} — ${stream.title}`;
-}
+const HOOKS = ['Best moment', 'Everyone reacted', 'You missed this', 'Peak clip', 'Must watch'];
 
-/** Generate up to `count` non-overlapping clips from the stream's chat peaks. */
-export function generateClips(stream, { count = 5 } = {}) {
-  const messages = chatFor(stream.id);
+export async function generateClips(stream, { count = 5 } = {}) {
+  const messages = await repo.chatFor(stream.id);
   const peaks = detectPeaks(messages);
   const chosen = [];
   for (const peak of peaks) {
     const start = Math.max(0, peak.start - LEAD_IN);
     const end = start + CLIP_SECONDS;
-    if (chosen.some((c) => !(end <= c.start || start >= c.end))) continue; // no overlap
+    if (chosen.some((c) => !(end <= c.start || start >= c.end))) continue;
     chosen.push({ start, end, score: peak.count });
     if (chosen.length >= count) break;
   }
@@ -68,30 +62,20 @@ export function generateClips(stream, { count = 5 } = {}) {
   const clips = chosen.map((c, i) => {
     const n = String(i + 1).padStart(2, '0');
     const clip = {
-      id: newId('clip'),
-      stream_id: stream.id,
-      index: i + 1,
-      start: c.start,
-      end: c.end,
-      duration_s: c.end - c.start,
-      score: c.score,                       // chat messages in the peak window
-      lang: stream.source_lang,
-      title: titleFor(stream, i, c),
-      hook: `${c.score} viewers reacted here`,
-      captions: `${stream.id}/clip_${n}.vtt`,
-      created_at: new Date().toISOString(),
+      id: repo.newId('clip'), stream_id: stream.id, index: i + 1,
+      start: c.start, end: c.end, duration_s: c.end - c.start, score: c.score,
+      lang: stream.source_lang, title: `${HOOKS[i % HOOKS.length]} — ${stream.title}`,
+      hook: `${c.score} viewers reacted here`, captions: `${stream.id}/clip_${n}.vtt`,
     };
     fs.writeFileSync(path.join(dir, `clip_${n}.json`), JSON.stringify(clip, null, 2));
-    fs.writeFileSync(path.join(dir, `clip_${n}.vtt`), toVtt(stream.id, clip, messages));
+    fs.writeFileSync(path.join(dir, `clip_${n}.vtt`), toVtt(clip, messages));
     return clip;
   });
 
-  const manifest = { stream_id: stream.id, title: stream.title, clips };
-  fs.writeFileSync(path.join(dir, 'clips_manifest.json'), JSON.stringify(manifest, null, 2));
-  store.clips.set(stream.id, clips);
+  fs.writeFileSync(path.join(dir, 'clips_manifest.json'),
+    JSON.stringify({ stream_id: stream.id, title: stream.title, clips }, null, 2));
+  await repo.saveClips(stream.id, clips);
   return clips;
 }
 
-export function clipsFor(streamId) {
-  return store.clips.get(streamId) || [];
-}
+export const clipsFor = (streamId) => repo.clipsFor(streamId);
