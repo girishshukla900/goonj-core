@@ -1,0 +1,11 @@
+{
+  "name": "goonj",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Goonj — an India-first hybrid creator platform (backend + services)",
+  "scripts": {
+    "test": "node test/run-all.js",
+    "test:system": "node test/system.test.js"
+  }
+}
