@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goonj — web client</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="logo">गूं</div>
+    <div class="brand">Goonj</div>
+    <div class="grow"></div>
+    <button class="btn" id="loginBtn">Sign in</button>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="main"><div class="skel">Loading…</div></main>
+</div>
+
+<div class="overlay" id="watch">
+  <div class="player" id="player">▶</div>
+  <div class="pad">
+    <h1 id="wTitle"></h1>
+    <div class="sub" id="wMeta"></div>
+    <div class="row" id="wActions"></div>
+    <h1 style="font-size:15px;margin-top:14px">AI dubbing</h1>
+    <div class="row" id="dubChips"></div>
+    <div class="note" id="dubNote">Pick a language to dub this video in the creator's own voice.</div>
+    <div class="row"><button class="btn" id="closeWatch">← Back</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
