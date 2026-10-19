@@ -32,6 +32,10 @@ The double-entry ledger lives in `src/ledger.js`: `postTransaction`,
 `recordEarning`, `creatorBalance`, `requestPayout`, `dailyRun`, `registerUpi`,
 `journalBalances`, `ledgerCheck`. The payments service is built on it.
 
+`src/live_repo.js` (streams, chat, polls, clips) and `src/community_repo.js`
+(tiers, memberships, watch parties, posts) back the live and community
+services.
+
 `feed` is the regional-first query: the viewer's language first, then their
 region, then newest.
 
